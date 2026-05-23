@@ -4,6 +4,12 @@ A minimalistic Android home screen replacement built for developers who want the
 
 True black. No icons. Text only. Instant search.
 
+## Download
+
+[![Download APK](https://img.shields.io/badge/Download-APK%20v1.0.0-brightgreen?style=for-the-badge&logo=android)](https://github.com/rishabh11336/terminal-launcher/releases/download/v1.0.0/terminal_launcher.apk)
+
+> Android 8.0+ · arm64 · 16MB · Sideload only
+
 ---
 
 ## Features
