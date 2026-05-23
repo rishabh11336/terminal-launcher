@@ -1,0 +1,47 @@
+name: terminal_launcher
+description: Minimalistic terminal-style Android launcher
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # App listing and launching
+  device_apps: ^2.2.0
+
+  # Persistent storage
+  shared_preferences: ^2.2.0
+
+  # State management
+  provider: ^6.1.0
+
+  # Date formatting for clock
+  intl: ^0.19.0
+
+  # Optional: battery and connectivity status (P2)
+  battery_plus: ^5.0.0
+  connectivity_plus: ^5.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/fonts/
+
+  fonts:
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/JetBrainsMono-Light.ttf
+          weight: 300
