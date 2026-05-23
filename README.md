@@ -8,7 +8,7 @@ True black. No icons. Text only. Instant search.
 
 [![Download APK](https://img.shields.io/badge/Download-APK%20v1.0.0-brightgreen?style=for-the-badge&logo=android)](https://github.com/rishabh11336/terminal-launcher/releases/download/v1.0.0/terminal_launcher.apk)
 
-> Android 8.0+ · arm64 · 16MB · Sideload only
+> Android 14+ (API 34+) · arm64 · 16MB · Sideload only
 
 ---
 
@@ -118,14 +118,20 @@ flutter pub get
 # Run (debug, emulator)
 flutter run
 
-# Release APK — arm64 only (Pixel 7a)
+# Release APK — arm64 (most Android 14+ devices)
 flutter build apk --release --target-platform android-arm64
+# → build/app/outputs/flutter-apk/app-release.apk
+
+# Universal APK (all architectures)
+flutter build apk --release
 # → build/app/outputs/flutter-apk/app-release.apk
 ```
 
 ---
 
-## Installation (Pixel 7a)
+## Installation
+
+Works on any Android 14+ (API 34+) device. Tested on **Google Pixel 7a**. OEM skins (Samsung One UI, MIUI, etc.) may require extra steps for setting default launcher or resolving gesture conflicts.
 
 ```bash
 adb install build/app/outputs/flutter-apk/app-release.apk
@@ -148,6 +154,6 @@ flutter test
 
 ## Device
 
-Built for **Google Pixel 7a** (Android 14). Works on any Android device API 26+.
+Works on any **Android 14+** (API 34+) device. Developed and tested on **Google Pixel 7a**.
 
 Personal project — not on the Play Store. Sideloaded APK only.
