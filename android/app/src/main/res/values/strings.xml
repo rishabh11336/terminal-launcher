@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Terminal Launcher</string>
+    <string name="notif_service_description">Used only to display unread counts on pinned app icons. Does not read notification content.</string>
+</resources>

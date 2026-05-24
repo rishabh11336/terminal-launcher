@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:terminal_launcher/models/system_metrics.dart';
+import 'package:terminal_launcher/services/system_metrics_service.dart';
 import 'package:terminal_launcher/utils/constants.dart';
 
 class ClockWidget extends StatefulWidget {
@@ -10,23 +12,39 @@ class ClockWidget extends StatefulWidget {
   State<ClockWidget> createState() => _ClockWidgetState();
 }
 
-class _ClockWidgetState extends State<ClockWidget> {
-  late Timer _timer;
+class _ClockWidgetState extends State<ClockWidget>
+    with SingleTickerProviderStateMixin {
+  late Timer _clockTimer;
   late DateTime _now;
+  late AnimationController _chargeController;
+  StreamSubscription<SystemMetrics>? _metricsSub;
+  bool _isCharging = false;
 
   @override
   void initState() {
     super.initState();
     _now = DateTime.now();
-    // 30s interval — we only show HH:MM, no per-second update needed
-    _timer = Timer.periodic(AppDurations.clockRefresh, (_) {
+    _clockTimer = Timer.periodic(AppDurations.clockRefresh, (_) {
       setState(() => _now = DateTime.now());
+    });
+
+    _chargeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+
+    _metricsSub = SystemMetricsService().stream.listen((m) {
+      if (mounted && m.isCharging != _isCharging) {
+        setState(() => _isCharging = m.isCharging);
+      }
     });
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _clockTimer.cancel();
+    _chargeController.dispose();
+    _metricsSub?.cancel();
     super.dispose();
   }
 
@@ -55,6 +73,21 @@ class _ClockWidgetState extends State<ClockWidget> {
             color: AppColors.textSecondary,
           ),
         ),
+        if (_isCharging) ...[
+          const SizedBox(height: 4),
+          FadeTransition(
+            opacity: _chargeController,
+            child: const Text(
+              '⚡ charging',
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                fontSize: AppSizes.hintFontSize,
+                fontWeight: FontWeight.w400,
+                color: AppColors.metricCharging,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

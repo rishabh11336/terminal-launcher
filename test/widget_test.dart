@@ -15,16 +15,20 @@ import 'package:terminal_launcher/widgets/terminal_cursor.dart';
 import 'package:terminal_launcher/models/app_info.dart';
 import 'package:terminal_launcher/widgets/pinned_apps_list.dart';
 
+// Shared test prefs: hide hardware-dependent widgets to avoid overflow
+// in the 800×600 test viewport (real devices are 1080×2400+).
+const _testPrefs = <String, Object>{'show_system_metrics': false};
+
 // Helper: build TerminalLauncherApp with mocked prefs
 Future<Widget> _buildApp() async {
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues(_testPrefs);
   final prefs = await PersistenceService.create();
   return TerminalLauncherApp(prefs: prefs);
 }
 
 // Helper: build HomeScreen with a LauncherNotifier provider (no device needed)
 Future<Widget> _buildHomeScreen() async {
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues(_testPrefs);
   final prefs = await PersistenceService.create();
   return ChangeNotifierProvider(
     create: (_) => LauncherNotifier(
@@ -137,7 +141,13 @@ void main() {
 
   group('HomeScreen — search activation', () {
     testWidgets('tap activates search — notifier state changes', (tester) async {
-      SharedPreferences.setMockInitialValues({});
+      // Phone-sized viewport: async widgets (NotificationsTable, RecentAppsTable)
+      // grow after permission checks complete during pump(500ms).
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.reset);
+
+      SharedPreferences.setMockInitialValues(_testPrefs);
       final prefs = await PersistenceService.create();
       late LauncherNotifier notifier;
 
@@ -167,7 +177,11 @@ void main() {
     });
 
     testWidgets('search overlay AnimatedOpacity reaches 1.0 when active', (tester) async {
-      SharedPreferences.setMockInitialValues({});
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.reset);
+
+      SharedPreferences.setMockInitialValues(_testPrefs);
       final prefs = await PersistenceService.create();
       late LauncherNotifier notifier;
 

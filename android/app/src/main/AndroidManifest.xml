@@ -1,13 +1,16 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- Required to query all installed packages on Android 11+ -->
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Required to pull down notification shade programmatically -->
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
 
-    <!-- Required for lock screen via device admin (optional feature) -->
-    <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
+    <!-- Required for WiFi RSSI signal strength -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Required for recent apps via UsageStatsManager -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <application
         android:label="Terminal"
@@ -74,7 +77,30 @@
             </intent-filter>
         </receiver>
 
+        <!-- Notification listener for badge counts on pinned apps -->
+        <service
+            android:name=".NotificationCountService"
+            android:label="Notification Access"
+            android:description="@string/notif_service_description"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.notification.default_filter_types"
+                android:value="conversations|alerts" />
+        </service>
+
     </application>
+
+    <!-- Scoped query: launcher apps only (replaces QUERY_ALL_PACKAGES) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
     <!-- Required to query activities that can process text -->
     <queries>

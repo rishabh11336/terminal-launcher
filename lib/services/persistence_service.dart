@@ -58,6 +58,29 @@ class PersistenceService {
   Future<void> setLockOnDoubleTap(bool value) =>
       _prefs.setBool(PrefKeys.lockOnDoubleTap, value);
 
+  // --- Show icons ---
+
+  bool getShowIcons() => _prefs.getBool(PrefKeys.showIcons) ?? true;
+
+  Future<void> setShowIcons(bool value) =>
+      _prefs.setBool(PrefKeys.showIcons, value);
+
+  // --- Watched notification packages ---
+
+  Set<String> getWatchedNotifPackages() =>
+      (_prefs.getStringList(PrefKeys.watchedNotifPackages) ?? []).toSet();
+
+  Future<void> setWatchedNotifPackages(Set<String> pkgs) =>
+      _prefs.setStringList(PrefKeys.watchedNotifPackages, pkgs.toList());
+
+  // --- System metrics toggle ---
+
+  bool getShowSystemMetrics() =>
+      _prefs.getBool(PrefKeys.showSystemMetrics) ?? true;
+
+  Future<void> setShowSystemMetrics(bool value) =>
+      _prefs.setBool(PrefKeys.showSystemMetrics, value);
+
   // --- Load full settings object ---
 
   LauncherSettings loadSettings() => LauncherSettings(
@@ -66,5 +89,6 @@ class PersistenceService {
         accentColor: getAccentColor(),
         showStatusBar: getShowStatusBar(),
         lockOnDoubleTap: getLockOnDoubleTap(),
+        showIcons: getShowIcons(),
       );
 }

@@ -18,6 +18,8 @@ class LauncherSettings {
   final AccentColor accentColor;
   final bool showStatusBar; // battery + wifi display
   final bool lockOnDoubleTap;
+  final bool showIcons; // app icons next to names
+  final bool showSystemMetrics;
 
   const LauncherSettings({
     this.pinnedPackages = const [],
@@ -25,6 +27,8 @@ class LauncherSettings {
     this.accentColor = AccentColor.white,
     this.showStatusBar = false,
     this.lockOnDoubleTap = false,
+    this.showIcons = true,
+    this.showSystemMetrics = true,
   });
 
   LauncherSettings copyWith({
@@ -33,6 +37,8 @@ class LauncherSettings {
     AccentColor? accentColor,
     bool? showStatusBar,
     bool? lockOnDoubleTap,
+    bool? showIcons,
+    bool? showSystemMetrics,
   }) =>
       LauncherSettings(
         pinnedPackages: pinnedPackages ?? this.pinnedPackages,
@@ -40,6 +46,8 @@ class LauncherSettings {
         accentColor: accentColor ?? this.accentColor,
         showStatusBar: showStatusBar ?? this.showStatusBar,
         lockOnDoubleTap: lockOnDoubleTap ?? this.lockOnDoubleTap,
+        showIcons: showIcons ?? this.showIcons,
+        showSystemMetrics: showSystemMetrics ?? this.showSystemMetrics,
       );
 
   @override
@@ -49,7 +57,9 @@ class LauncherSettings {
       setEquals(other.hiddenPackages, hiddenPackages) &&
       other.accentColor == accentColor &&
       other.showStatusBar == showStatusBar &&
-      other.lockOnDoubleTap == lockOnDoubleTap;
+      other.lockOnDoubleTap == lockOnDoubleTap &&
+      other.showIcons == showIcons &&
+      other.showSystemMetrics == showSystemMetrics;
 
   @override
   int get hashCode => Object.hash(
@@ -58,5 +68,7 @@ class LauncherSettings {
         accentColor,
         showStatusBar,
         lockOnDoubleTap,
+        showIcons,
+        showSystemMetrics,
       );
 }

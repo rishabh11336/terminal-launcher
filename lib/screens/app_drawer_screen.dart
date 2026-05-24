@@ -70,8 +70,12 @@ class _AppDrawerScreenState extends State<AppDrawerScreen> {
     final notifier = context.read<LauncherNotifier>();
 
     return PopScope(
-      // EC-06: home button while drawer open closes drawer, not launcher
-      canPop: true,
+      // EC-06: back always dismisses drawer even when keyboard is open
+      canPop: false,
+      onPopInvokedWithResult: (_, __) {
+        _focusNode.unfocus();
+        Navigator.pop(context);
+      },
       child: Scaffold(
         backgroundColor: Colors.black,
         resizeToAvoidBottomInset: true,
@@ -118,6 +122,7 @@ class _AppDrawerScreenState extends State<AppDrawerScreen> {
                       return AppListTile(
                         app: app,
                         isHighlighted: false, // no auto-launch in drawer
+                        showIcons: notifier.showIcons,
                         onTap: () {
                           Navigator.pop(context);
                           notifier.launchApp(app);

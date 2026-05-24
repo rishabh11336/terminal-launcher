@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:terminal_launcher/models/app_info.dart';
 import 'package:terminal_launcher/screens/app_drawer_screen.dart';
 import 'package:terminal_launcher/screens/settings_screen.dart';
 import 'package:terminal_launcher/state/launcher_notifier.dart';
@@ -9,6 +10,10 @@ import 'package:terminal_launcher/widgets/context_menu.dart';
 import 'package:terminal_launcher/widgets/pinned_apps_list.dart';
 import 'package:terminal_launcher/widgets/search_overlay.dart';
 import 'package:terminal_launcher/widgets/status_bar_widget.dart';
+import 'package:terminal_launcher/services/system_metrics_service.dart';
+import 'package:terminal_launcher/widgets/notifications_table.dart';
+import 'package:terminal_launcher/widgets/system_metrics_table.dart';
+import 'package:terminal_launcher/widgets/recent_apps_table.dart';
 import 'package:terminal_launcher/widgets/terminal_cursor.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,10 +23,19 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final FocusNode _focusNode = FocusNode();
   final TextEditingController _controller = TextEditingController();
   LauncherNotifier? _notifier;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Focus listener handles back-button IME dismissal
+    _focusNode.addListener(_onFocusChanged);
+  }
 
   @override
   void didChangeDependencies() {
@@ -34,6 +48,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  void _onFocusChanged() {
+    if (!_focusNode.hasFocus && (_notifier?.state.isSearchActive ?? false)) {
+      _deactivateSearch();
+    }
+  }
+
   void _onNotifierChanged() {
     if (!(_notifier?.state.isSearchActive ?? true)) {
       _controller.clear();
@@ -41,11 +61,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  // Detects swipe-down keyboard dismissal (doesn't remove focus, only lowers IME)
+  @override
+  void didChangeMetrics() {
+    final bottomInset = WidgetsBinding
+            .instance.platformDispatcher.implicitView?.viewInsets.bottom ??
+        0.0;
+    if (bottomInset == 0.0 && (_notifier?.state.isSearchActive ?? false)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _deactivateSearch();
+      });
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _notifier?.removeListener(_onNotifierChanged);
+    _focusNode.removeListener(_onFocusChanged);
     _focusNode.dispose();
     _controller.dispose();
+    SystemMetricsService().dispose();
     super.dispose();
   }
 
@@ -102,10 +138,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Scaffold(
         backgroundColor: Colors.black,
         resizeToAvoidBottomInset: false,
-        body: GestureDetector(
+        body: Stack(
+          children: [
+            // Double-tap layer — sits behind content, translucent so content
+            // still receives taps. Separate recognizer avoids the 300ms onTap
+            // delay Flutter adds when onDoubleTap is on the same detector.
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onDoubleTap: _onDoubleTap,
+              ),
+            ),
+            GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: _activateSearch,
-          onDoubleTap: _onDoubleTap,
           onVerticalDragEnd: (details) {
             if (details.primaryVelocity == null) return;
             if (details.primaryVelocity! < -AppSizes.swipeVelocityThreshold) {
@@ -146,73 +192,116 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Status bar row (top-right, P2)
-                      Consumer<LauncherNotifier>(
-                        builder: (_, notifier, __) => Align(
-                          alignment: Alignment.topRight,
-                          child: Visibility(
-                            visible: notifier.showStatusBar,
-                            child: const StatusBarWidget(),
-                          ),
+                      // Status bar row — rebuilds only when showStatusBar changes
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: Builder(
+                          builder: (ctx) {
+                            final show = ctx.select<LauncherNotifier, bool>(
+                              (n) => n.showStatusBar,
+                            );
+                            return Visibility(
+                              visible: show,
+                              child: const StatusBarWidget(),
+                            );
+                          },
                         ),
                       ),
                       const ClockWidget(),
-                      const SizedBox(height: 48),
-                      // Permission fallback — shown when no apps loaded
-                      Consumer<LauncherNotifier>(
-                        builder: (_, notifier, __) {
-                          if (notifier.allVisibleApps.isEmpty &&
-                              notifier.pinnedApps.isEmpty) {
-                            return const Padding(
-                              padding: EdgeInsets.only(bottom: 16),
-                              child: Text(
-                                'grant package permission in settings to continue',
-                                style: TextStyle(
-                                  fontFamily: 'JetBrainsMono',
-                                  fontSize: AppSizes.hintFontSize,
-                                  color: AppColors.textHint,
-                                ),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
+                      const SizedBox(height: 24),
+                      // SystemMetricsTable — rebuilds only when showSystemMetrics changes
+                      Builder(
+                        builder: (ctx) {
+                          final show = ctx.select<LauncherNotifier, bool>(
+                            (n) => n.showSystemMetrics,
+                          );
+                          return Visibility(
+                            visible: show,
+                            child: const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SystemMetricsTable(),
+                                SizedBox(height: 24),
+                              ],
+                            ),
+                          );
                         },
                       ),
-                      // Only PinnedAppsList rebuilds when pinned apps change
-                      Consumer<LauncherNotifier>(
-                        builder: (ctx, notifier, __) => PinnedAppsList(
-                          apps: notifier.pinnedApps,
-                          onTap: notifier.launchApp,
-                          onLongPress: (app) =>
-                              showAppContextMenu(ctx, app, notifier),
+                      const RecentAppsTable(),
+                      const SizedBox(height: 24),
+                      const NotificationsTable(),
+                      const SizedBox(height: 24),
+                      // Permission fallback — rebuilds only when app-list emptiness changes
+                      Builder(
+                        builder: (ctx) {
+                          final isEmpty = ctx.select<LauncherNotifier, bool>(
+                            (n) => n.allVisibleApps.isEmpty && n.pinnedApps.isEmpty,
+                          );
+                          if (!isEmpty) return const SizedBox.shrink();
+                          return const Padding(
+                            padding: EdgeInsets.only(bottom: 16),
+                            child: Text(
+                              'grant package permission in settings to continue',
+                              style: TextStyle(
+                                fontFamily: 'JetBrainsMono',
+                                fontSize: AppSizes.hintFontSize,
+                                color: AppColors.textHint,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      // PinnedAppsList — rebuilds only when pins, showIcons, or notif counts change
+                      Selector<LauncherNotifier,
+                          ({List<AppInfo> apps, bool showIcons, Map<String, int> counts})>(
+                        selector: (_, n) => (
+                          apps: n.pinnedApps,
+                          showIcons: n.showIcons,
+                          counts: n.notifCounts,
                         ),
+                        builder: (ctx, data, __) {
+                          final notifier = ctx.read<LauncherNotifier>();
+                          return PinnedAppsList(
+                            apps: data.apps,
+                            showIcons: data.showIcons,
+                            notifCount: (pkg) => data.counts[pkg] ?? 0,
+                            onTap: notifier.launchApp,
+                            onLongPress: (app) =>
+                                showAppContextMenu(ctx, app, notifier),
+                          );
+                        },
                       ),
                       const Spacer(),
                       const TerminalCursor(),
                     ],
                   ),
-                  // Layer 2: search overlay — fades in when search is active
+                  // Layer 2: search overlay — rebuilds only when isSearchActive changes
                   Positioned.fill(
-                    child: Consumer<LauncherNotifier>(
-                      builder: (_, notifier, __) => AnimatedOpacity(
-                        opacity: notifier.state.isSearchActive ? 1.0 : 0.0,
-                        duration: AppDurations.searchOverlayFade,
-                        child: notifier.state.isSearchActive
-                            ? Container(
-                                color: Colors.black,
-                                child: SearchOverlay(
-                                  controller: _controller,
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
+                    child: Builder(
+                      builder: (ctx) {
+                        final active = ctx.select<LauncherNotifier, bool>(
+                          (n) => n.state.isSearchActive,
+                        );
+                        return AnimatedOpacity(
+                          opacity: active ? 1.0 : 0.0,
+                          duration: AppDurations.searchOverlayFade,
+                          child: active
+                              ? Container(
+                                  color: Colors.black,
+                                  child: SearchOverlay(controller: _controller),
+                                )
+                              : const SizedBox.shrink(),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        ),
+        ),          // inner GestureDetector
+          ],        // outer Stack children
+        ),          // outer Stack (body:)
       ),        // Scaffold
     );          // PopScope
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:terminal_launcher/models/launcher_settings.dart';
 import 'package:terminal_launcher/state/launcher_notifier.dart';
 import 'package:terminal_launcher/utils/constants.dart';
 import 'package:terminal_launcher/widgets/app_list_tile.dart';
@@ -33,6 +34,7 @@ class SearchOverlay extends StatelessWidget {
                   .map((app) => AppListTile(
                         app: app,
                         isHighlighted: app == highlight,
+                        showIcons: notifier.showIcons,
                         onTap: () => notifier.launchApp(app),
                         onLongPress: () =>
                             showAppContextMenu(context, app, notifier),
@@ -53,15 +55,18 @@ class _QueryDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = context.select<LauncherNotifier, Color>(
+      (n) => n.accentColor.color,
+    );
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (_, value, __) => Text(
         '> ${value.text}',
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'JetBrainsMono',
           fontSize: AppSizes.appNameFontSize,
           fontWeight: FontWeight.w400,
-          color: AppColors.textPrimary,
+          color: color,
         ),
       ),
     );

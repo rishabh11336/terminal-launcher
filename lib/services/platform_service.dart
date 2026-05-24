@@ -5,22 +5,44 @@ class PlatformService {
   static const _channel =
       MethodChannel('com.rishabh.terminal_launcher/platform');
 
-  // Pull down notification shade (TRD Section 6.2)
   Future<void> expandNotifications() async {
     try {
       await _channel.invokeMethod('expandNotifications');
     } on PlatformException catch (e) {
-      // Graceful degradation — hidden API may be blocked on future Android (TRD 14.1)
       debugPrint('[Platform] expandNotifications failed: ${e.message}');
     }
   }
 
-  // Lock screen — requires device admin permission (TRD Section 6.2)
+  /// Returns true if device admin is active for LockScreenReceiver.
+  Future<bool> isAdminActive() async {
+    try {
+      return await _channel.invokeMethod<bool>('isAdminActive') ?? false;
+    } on PlatformException catch (e) {
+      debugPrint('[Platform] isAdminActive failed: ${e.message}');
+      return false;
+    }
+  }
+
+  /// Opens Android's built-in "Activate device admin" screen.
+  Future<void> openDeviceAdminSettings() async {
+    try {
+      await _channel.invokeMethod('openDeviceAdminSettings');
+    } on PlatformException catch (e) {
+      debugPrint('[Platform] openDeviceAdminSettings failed: ${e.message}');
+    }
+  }
+
+  /// Locks the screen. If device admin is not active, opens the activation
+  /// screen instead so the user can grant the permission.
   Future<void> lockScreen() async {
     try {
       await _channel.invokeMethod('lockScreen');
     } on PlatformException catch (e) {
-      debugPrint('[Platform] lockScreen failed: ${e.message}');
+      if (e.code == 'ADMIN_NOT_ACTIVE') {
+        await openDeviceAdminSettings();
+      } else {
+        debugPrint('[Platform] lockScreen failed: ${e.message}');
+      }
     }
   }
 }

@@ -6,6 +6,9 @@ class PrefKeys {
   static const String accentColor = 'accent_color'; // String enum name
   static const String showStatusBar = 'show_status_bar'; // bool
   static const String lockOnDoubleTap = 'lock_on_double_tap'; // bool
+  static const String showIcons = 'show_icons'; // bool
+  static const String showSystemMetrics = 'show_system_metrics'; // bool
+  static const String watchedNotifPackages = 'watched_notif_packages'; // List<String>
 }
 
 class AppColors {
@@ -15,6 +18,19 @@ class AppColors {
   static const Color textHint = Color(0x66FFFFFF); // 40% opacity
   static const Color accentGreen = Color(0xFF00FF88);
   static const Color accentAmber = Color(0xFFF59E0B);
+
+  // ── IDE-style semantic colors ──────────────────────────────────────────────
+  static const Color metricGood    = Color(0xFF00FF88); // green  — low load / healthy
+  static const Color metricWarn    = Color(0xFFF59E0B); // amber  — moderate / warning
+  static const Color metricDanger  = Color(0xFFFF4444); // red    — high load / critical
+  static const Color metricInfo    = Color(0xFF4FC3F7); // blue   — network / informational
+  static const Color metricCold    = Color(0xFF81D4FA); // light blue — cool temperature
+  static const Color metricCharging = Color(0xFF40E0D0); // cyan  — charging state
+
+  // ── section label colors ───────────────────────────────────────────────────
+  static const Color labelSystem  = Color(0xFF4FC3F7); // blue
+  static const Color labelRecent  = Color(0xFF00FF88); // green
+  static const Color labelNotif   = Color(0xFFF59E0B); // amber
 }
 
 class AppDurations {

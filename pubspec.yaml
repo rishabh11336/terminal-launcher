@@ -1,6 +1,6 @@
 name: terminal_launcher
 description: Minimalistic terminal-style Android launcher
-version: 1.0.0+1
+version: 1.0.0+16
 publish_to: 'none'
 
 environment:

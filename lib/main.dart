@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:terminal_launcher/screens/home_screen.dart';
 import 'package:terminal_launcher/services/app_cache_service.dart';
 import 'package:terminal_launcher/services/app_launcher_service.dart';
+import 'package:terminal_launcher/services/notification_service.dart';
 import 'package:terminal_launcher/services/persistence_service.dart';
 import 'package:terminal_launcher/services/platform_service.dart';
 import 'package:terminal_launcher/state/launcher_notifier.dart';
@@ -35,6 +36,7 @@ class TerminalLauncherApp extends StatelessWidget {
         launcher: AppLauncherService(),
         platform: PlatformService(),
         prefs: prefs,
+        notif: NotificationService(),
       ),
       child: MaterialApp(
         title: 'Terminal Launcher',

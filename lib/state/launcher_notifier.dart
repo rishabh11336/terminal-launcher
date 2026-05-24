@@ -6,6 +6,7 @@ import 'package:terminal_launcher/models/launcher_settings.dart';
 import 'package:terminal_launcher/services/app_cache_service.dart';
 import 'package:terminal_launcher/services/app_launcher_service.dart';
 import 'package:terminal_launcher/services/persistence_service.dart';
+import 'package:terminal_launcher/services/notification_service.dart';
 import 'package:terminal_launcher/services/platform_service.dart';
 import 'package:terminal_launcher/state/launcher_state.dart';
 import 'package:terminal_launcher/utils/constants.dart';
@@ -21,20 +22,29 @@ class LauncherNotifier extends ChangeNotifier {
   final AppLauncherService _launcher;
   final PlatformService _platform;
   final PersistenceService _prefs;
+  final NotificationService _notif;
 
   Timer? _autoLaunchTimer;
+  Timer? _notifDebounce;
   StreamSubscription<dynamic>? _pkgSubscription;
+  StreamSubscription<Map<String, int>>? _notifSubscription;
   bool _disposed = false;
+
+  Map<String, int> _notifCounts = {};
+  int notifCount(String packageName) => _notifCounts[packageName] ?? 0;
+  Map<String, int> get notifCounts => _notifCounts;
 
   LauncherNotifier({
     required AppCacheService cache,
     required AppLauncherService launcher,
     required PlatformService platform,
     required PersistenceService prefs,
+    NotificationService? notif,
   })  : _cache = cache,
         _launcher = launcher,
         _platform = platform,
-        _prefs = prefs {
+        _prefs = prefs,
+        _notif = notif ?? NotificationService() {
     _init();
   }
 
@@ -73,6 +83,20 @@ class LauncherNotifier extends ChangeNotifier {
       debugPrint('[LauncherNotifier] Package channel skipped: $e');
     }
     if (!_disposed) notifyListeners(); // triggers UI rebuild with loaded apps
+
+    // Subscribe to notification counts — 500ms debounce prevents notifyListeners()
+    // storms during busy notification periods
+    try {
+      _notifSubscription = _notif.countStream.listen((counts) {
+        _notifDebounce?.cancel();
+        _notifDebounce = Timer(const Duration(milliseconds: 500), () {
+          _notifCounts = counts;
+          if (!_disposed) notifyListeners();
+        });
+      });
+    } catch (e) {
+      debugPrint('[LauncherNotifier] Notification stream skipped: $e');
+    }
   }
 
   // --- Search ---
@@ -116,6 +140,12 @@ class LauncherNotifier extends ChangeNotifier {
     _autoLaunchTimer?.cancel();
     clearSearch();
     _launcher.launch(app.packageName);
+  }
+
+  void launchByPackage(String packageName) {
+    _autoLaunchTimer?.cancel();
+    clearSearch();
+    _launcher.launch(packageName);
   }
 
   void clearSearch() {
@@ -207,6 +237,27 @@ class LauncherNotifier extends ChangeNotifier {
       .where((a) => _cache.hiddenPackages.contains(a.packageName))
       .toList();
 
+  Set<String> get watchedNotifPackages => _prefs.getWatchedNotifPackages();
+
+  void toggleWatchedNotifPackage(String pkg) {
+    final current = _prefs.getWatchedNotifPackages();
+    if (current.contains(pkg)) {
+      current.remove(pkg);
+    } else {
+      current.add(pkg);
+    }
+    _prefs.setWatchedNotifPackages(current);
+    notifyListeners();
+  }
+
+  String displayNameForPackage(String pkg) {
+    try {
+      return _cache.allApps.firstWhere((a) => a.packageName == pkg).displayName;
+    } catch (_) {
+      return pkg;
+    }
+  }
+
   // --- Settings accessors ---
 
   AccentColor get accentColor => _prefs.getAccentColor();
@@ -230,11 +281,33 @@ class LauncherNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool get showIcons => _prefs.getShowIcons();
+
+  void setShowIcons(bool value) {
+    _prefs.setShowIcons(value);
+    notifyListeners();
+  }
+
+  bool get showSystemMetrics => _prefs.getShowSystemMetrics();
+
+  void setShowSystemMetrics(bool value) {
+    _prefs.setShowSystemMetrics(value);
+    notifyListeners();
+  }
+
+  // --- Notification permission ---
+
+  Future<bool> isNotifPermissionGranted() => _notif.isPermissionGranted();
+
+  Future<void> requestNotifPermission() => _notif.requestPermission();
+
   @override
   void dispose() {
     _disposed = true;
     _autoLaunchTimer?.cancel();
+    _notifDebounce?.cancel();
     _pkgSubscription?.cancel();
+    _notifSubscription?.cancel();
     super.dispose();
   }
 }

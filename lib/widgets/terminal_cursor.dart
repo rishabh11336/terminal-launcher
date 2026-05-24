@@ -45,6 +45,6 @@ class _TerminalCursorState extends State<TerminalCursor>
     fontFamily: 'JetBrainsMono',
     fontSize: AppSizes.cursorFontSize,
     fontWeight: FontWeight.w400,
-    color: AppColors.textPrimary,
+    color: AppColors.metricGood,
   );
 }
